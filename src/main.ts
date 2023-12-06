@@ -1,29 +1,41 @@
-import { drizzle } from 'drizzle-orm/bun-sqlite';
-import { Database } from 'bun:sqlite';
-import { sql } from "drizzle-orm";
-import { text, integer, sqliteTable } from "drizzle-orm/sqlite-core";
+import { 
+  error,              // creates error Responses
+  json,               // creates JSON Responses
+  Router,             // the Router itself
+  withParams,         // middleware to extract params into the Request itself
+} from 'itty-router'
 
-export default {
-  async fetch(request: Request, server: Server) {
-    let text = "Hello from Bun on Vercel!\n"
+// we'll start with some fake data
+const todos = [
+  { id: '1', message: 'Pet the puppy' },
+  { id: '2', message: 'Pet the kitty' },
+]
 
-const sqlite = new Database(':memory:');
-const db = drizzle(sqlite);
-const query = sql`select "hello ming2" as text`;
-const result = db.get<{ text: string }>(query);
-    text += JSON.stringify(result);
-    text += `\nurl: ${request.url}\n`
+const router = Router()
 
-    for (const [key, value] of request.headers.entries()) {
-      if (!key.startsWith("x-vercel")) continue
-      text += `\n${key}: ${value}`
+router
+  // GET todos - just return some data!
+  .get('/todos', () => todos)
+
+  // GET single todo
+  .get('/todos/:id', withParams, 
+    ({ id }) => {
+      const todo = todos.find(t => t.id === id)
+
+      return todo || error(404, 'That todo was not found!')
     }
+  )
 
-    return new Response(text, {
-      status: 200,
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8",
-      },
-    })
-  },
+  // *any* HTTP method works, even ones you make up
+  .puppy('/secret', () => 'Because why not?')
+
+  // return a 404 for anything else
+  .all('*', () => error(404))
+
+// Example showing Cloudflare module syntax
+export default {
+  fetch: (req, env, ctx) => router
+                              .handle(req, env, ctx)
+                              .then(json)
+                              .catch(error)
 }
