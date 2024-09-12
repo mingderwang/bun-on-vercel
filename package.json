@@ -1,6 +1,9 @@
 {
   "name": "bun-on-vercel",
   "type": "module",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "start": "bun run ./src/main.ts",
     "dev": "bun run --watch ./src/main.ts",
